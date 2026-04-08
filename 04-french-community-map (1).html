@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>French Community Map — De Tilly Feature 04</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.css"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--black:#080808;--gold:#c8a96e;--orange:#e8622a;--cream:#f4f1eb;--serif:'Cormorant Garamond',serif;--sans:'DM Sans',sans-serif}
+body{font-family:var(--sans);background:var(--cream);color:#1c1c1c;min-height:100vh;display:flex;flex-direction:column}
+.topbar{background:var(--black);padding:.8rem 2rem;display:flex;align-items:center;gap:1rem;flex-shrink:0}
+.back{color:rgba(255,255,255,.45);font-size:12px;text-decoration:none;transition:color .2s}.back:hover{color:var(--orange)}
+.topbar-title{color:rgba(255,255,255,.7);font-size:12px;margin-left:auto}
+.topbar-num{font-size:10px;color:rgba(255,255,255,.25);letter-spacing:.1em}
+.page-hero{background:var(--black);padding:1.8rem 2rem 1.5rem;text-align:center;flex-shrink:0}
+.feat-tag{font-size:10.5px;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:var(--orange);margin-bottom:.4rem;display:flex;align-items:center;justify-content:center;gap:8px}
+.feat-tag::before,.feat-tag::after{content:'';width:20px;height:1px;background:var(--orange)}
+h1{font-family:var(--serif);font-size:clamp(1.6rem,3vw,2.5rem);font-weight:300;color:#fff;line-height:1.1;margin-bottom:.3rem}
+h1 em{font-style:italic;color:var(--gold)}
+.hero-sub{font-size:12px;color:rgba(255,255,255,.4);max-width:480px;margin:0 auto}
+.stats-bar{background:rgba(8,8,8,.98);padding:.7rem 2rem;display:flex;gap:2.5rem;justify-content:center;flex-wrap:wrap;border-bottom:1px solid rgba(200,169,110,.15);flex-shrink:0}
+.stat-item{display:flex;flex-direction:column;align-items:center;gap:1px}
+.stat-num{font-family:var(--serif);font-size:1.2rem;color:var(--orange)}
+.stat-lbl{font-size:9px;letter-spacing:.1em;color:rgba(255,255,255,.3);text-transform:uppercase}
+/* LAYOUT */
+.map-layout{display:grid;grid-template-columns:1fr 290px;flex:1;min-height:500px}
+#map{width:100%;height:100%;min-height:500px}
+/* LEAFLET */
+.leaflet-container{font-family:var(--sans)}
+.leaflet-popup-content-wrapper{background:var(--black);color:#fff;border-radius:10px;border:none;box-shadow:0 12px 40px rgba(0,0,0,.6);font-family:var(--sans);min-width:200px}
+.leaflet-popup-tip{background:var(--black)}
+.leaflet-popup-close-button{color:rgba(255,255,255,.4)!important;font-size:16px!important;top:7px!important;right:10px!important}
+.leaflet-popup-content{margin:12px 14px 10px}
+/* MAP CONTROLS */
+.map-controls{position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:400;display:flex;gap:.3rem;background:rgba(8,8,8,.9);backdrop-filter:blur(12px);border-radius:22px;padding:4px;border:1px solid rgba(255,255,255,.1);flex-wrap:wrap;max-width:92%;justify-content:center}
+.mf{font-size:10.5px;font-weight:500;padding:5px 12px;border-radius:18px;border:none;color:rgba(255,255,255,.5);background:transparent;cursor:pointer;transition:all .22s;white-space:nowrap}
+.mf:hover{color:#fff}
+.mf.active{color:#fff}
+.mf-all.active{background:rgba(200,169,110,.25)}
+.mf-food.active{background:#e8622a}
+.mf-culture.active{background:#9b59b6}
+.mf-community.active{background:#185fa5}
+.mf-school.active{background:#1a6e3c}
+.mf-wine.active{background:#8B1A1A}
+/* DeTilly logo pin */
+.dt-pin{cursor:pointer;transition:transform .2s}
+.dt-pin:hover{transform:scale(1.15)}
+/* SIDEBAR */
+.sidebar{border-left:1px solid rgba(0,0,0,.08);background:#fff;display:flex;flex-direction:column;overflow:hidden}
+.sidebar-head{padding:.9rem 1.1rem;border-bottom:1px solid rgba(0,0,0,.06);flex-shrink:0;display:flex;align-items:center;justify-content:space-between}
+.sidebar-head-title{font-size:13px;font-weight:500}
+.spot-count{font-size:11px;color:#888;background:var(--cream);padding:2px 8px;border-radius:20px}
+.search-row{padding:.6rem 1.1rem;border-bottom:1px solid rgba(0,0,0,.05);flex-shrink:0}
+.search-input{width:100%;border:1px solid rgba(0,0,0,.1);border-radius:5px;padding:7px 10px;font-size:12.5px;color:var(--black);font-family:var(--sans);background:var(--cream);transition:border-color .2s}
+.search-input:focus{outline:none;border-color:var(--orange)}
+.spot-list{flex:1;overflow-y:auto}
+.spot-item{display:flex;align-items:flex-start;gap:.7rem;padding:.75rem 1.1rem;border-bottom:1px solid rgba(0,0,0,.04);cursor:pointer;transition:background .2s}
+.spot-item:hover{background:var(--cream)}
+.spot-icon{width:26px;height:26px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:.8rem;flex-shrink:0;margin-top:1px}
+.spot-name{font-size:12.5px;font-weight:500;margin-bottom:1px;line-height:1.3}
+.spot-hood{font-size:10px;color:#888;margin-bottom:1px}
+.spot-desc{font-size:11px;color:#666;line-height:1.45}
+.sidebar-cta{padding:.8rem 1.1rem;border-top:1px solid rgba(0,0,0,.07);flex-shrink:0;background:#fff}
+.cta-btn{width:100%;background:var(--orange);color:#fff;border:none;border-radius:5px;padding:9px;font-size:12px;font-weight:500;cursor:pointer;transition:background .2s}
+.cta-btn:hover{background:#f08050}
+@media(max-width:860px){.map-layout{grid-template-columns:1fr;height:auto}.sidebar{max-height:380px}#map{height:400px}}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <a href="index.html" class="back">← Back to all features</a>
+  <span class="topbar-title">French NYC Community Map</span>
+  <span class="topbar-num">04 / 12</span>
+</div>
+<div class="page-hero">
+  <div class="feat-tag">Feature 04 · Expat Page · Cultural</div>
+  <h1>The <em>French Community</em> Map of New York City</h1>
+  <p class="hero-sub">60+ curated French spots across NYC — each marked with the De Tilly pin. Click any to explore.</p>
+</div>
+<div class="stats-bar">
+  <div class="stat-item"><div class="stat-num">85K+</div><div class="stat-lbl">French citizens in NYC</div></div>
+  <div class="stat-item"><div class="stat-num">60+</div><div class="stat-lbl">French spots mapped</div></div>
+  <div class="stat-item"><div class="stat-num">8</div><div class="stat-lbl">French schools</div></div>
+  <div class="stat-item"><div class="stat-num">12</div><div class="stat-lbl">French restaurants · Brooklyn</div></div>
+  <div class="stat-item"><div class="stat-num">#1</div><div class="stat-lbl">French diaspora in US</div></div>
+</div>
+
+<div class="map-layout">
+  <div style="position:relative">
+    <div id="map"></div>
+    <div class="map-controls">
+      <button class="mf mf-all active" onclick="filterCat('all',this)">All</button>
+      <button class="mf mf-food" onclick="filterCat('food',this)">🥐 Food</button>
+      <button class="mf mf-wine" onclick="filterCat('wine',this)">🍷 Wine & Bars</button>
+      <button class="mf mf-culture" onclick="filterCat('culture',this)">🎭 Culture</button>
+      <button class="mf mf-community" onclick="filterCat('community',this)">🤝 Community</button>
+      <button class="mf mf-school" onclick="filterCat('school',this)">📚 Schools</button>
+    </div>
+  </div>
+  <div class="sidebar">
+    <div class="sidebar-head">
+      <span class="sidebar-head-title">French Spots NYC</span>
+      <span class="spot-count" id="spotCount">60+ spots</span>
+    </div>
+    <div class="search-row">
+      <input type="text" class="search-input" id="searchInput" placeholder="Search spots, neighborhoods…" oninput="doSearch()"/>
+    </div>
+    <div class="spot-list" id="spotList"></div>
+    <div class="sidebar-cta">
+      <button class="cta-btn" onclick="alert('Opens contact form in live site')">Find a French-Friendly Home →</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.js"></script>
+<script>
+const CAT={
+  food:{color:'#e8622a',bg:'rgba(232,98,42,.12)',text:'#b84a1a',icon:'🥐',label:'Food'},
+  wine:{color:'#8B1A1A',bg:'rgba(139,26,26,.12)',text:'#8B1A1A',icon:'🍷',label:'Wine & Bars'},
+  culture:{color:'#9b59b6',bg:'rgba(155,89,182,.12)',text:'#7d3c98',icon:'🎭',label:'Culture'},
+  community:{color:'#185fa5',bg:'rgba(26,95,165,.12)',text:'#185fa5',icon:'🤝',label:'Community'},
+  school:{color:'#1a6e3c',bg:'rgba(26,110,60,.12)',text:'#1a6e3c',icon:'📚',label:'School'}
+};
+
+// De Tilly logo pin SVG — black bg, orange DE, white TILLY text
+function dtPinSVG(cat, size=32){
+  const c = CAT[cat]?.color || '#e8622a';
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${Math.round(size*1.35)}" viewBox="0 0 32 43">
+    <defs><filter id="sh" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.45"/></filter></defs>
+    <path d="M16 0C7.16 0 0 7.16 0 16c0 10 16 27 16 27S32 26 32 16C32 7.16 24.84 0 16 0z" fill="${c}" filter="url(#sh)"/>
+    <circle cx="16" cy="16" r="11" fill="#080808"/>
+    <text x="16" y="13.5" text-anchor="middle" font-family="DM Sans,sans-serif" font-size="5.5" font-weight="600" fill="#e8622a" letter-spacing="0.5">DE</text>
+    <text x="16" y="20.5" text-anchor="middle" font-family="DM Sans,sans-serif" font-size="4.5" font-weight="300" fill="rgba(255,255,255,.85)" letter-spacing="1">TILLY</text>
+  </svg>`;
+}
+
+function makeIcon(cat, active=false){
+  const size = active ? 40 : 30;
+  return L.divIcon({
+    className:'dt-pin',
+    html: dtPinSVG(cat, size),
+    iconSize:[size, Math.round(size*1.35)],
+    iconAnchor:[size/2, Math.round(size*1.35)],
+    popupAnchor:[0, -Math.round(size*1.35)-2]
+  });
+}
+
+const SPOTS=[
+  // ── FOOD ──────────────────────────────────────
+  {id:1,cat:'food',name:"Balthazar",hood:"SoHo",lat:40.7226,lng:-74.0018,desc:"NYC's most beloved French brasserie — spring rolls, steak frites, the works. The expat social cornerstone."},
+  {id:2,cat:'food',name:"Buvette",hood:"West Village",lat:40.7335,lng:-74.0051,desc:"Tiny, perfect French gastrotheque by Jody Williams. Every French expat's first stop in NYC."},
+  {id:3,cat:'food',name:"Chez Ma Tante",hood:"West Village",lat:40.7347,lng:-74.0072,desc:"Beloved West Village French breakfast and brunch spot. Always packed with French regulars."},
+  {id:4,cat:'food',name:"Belleville",hood:"Park Slope",lat:40.6714,lng:-73.9788,desc:"Brooklyn's best French bistro — moules frites, duck confit. French families pack it every weekend."},
+  {id:5,cat:'food',name:"French Louie",hood:"Boerum Hill",lat:40.6843,lng:-73.9874,desc:"Exceptional French bistro near Carroll Gardens. Zinc bar, superb steak tartare."},
+  {id:6,cat:'food',name:"Boulud Sud",hood:"Upper West Side",lat:40.7778,lng:-73.9820,desc:"Daniel Boulud's Provençal Mediterranean restaurant. French chef royalty on the UWS."},
+  {id:7,cat:'food',name:"Café du Soleil",hood:"Upper West Side",lat:40.7812,lng:-73.9801,desc:"Authentic French café on Broadway. Morning croissants and evening wine — the UWS French HQ."},
+  {id:8,cat:'food',name:"Épicerie Boulud",hood:"Lincoln Center",lat:40.7720,lng:-73.9837,desc:"Daniel Boulud's casual French épicerie — charcuterie, sandwiches, wine. Next to Lincoln Center."},
+  {id:9,cat:'food',name:"Le Relais de Venise",hood:"Midtown East",lat:40.7573,lng:-73.9729,desc:"The iconic Parisian steak-frites chain. One formula, one price, no menu — a piece of Paris."},
+  {id:10,cat:'food',name:"Café de la Presse",hood:"Chelsea",lat:40.7447,lng:-74.0010,desc:"Authentic Parisian brasserie atmosphere in Chelsea. French newspapers available at the bar."},
+  {id:11,cat:'food',name:"Nice Matin",hood:"Upper West Side",lat:40.7770,lng:-73.9815,desc:"Côte d'Azur-inspired French restaurant. Lively UWS spot beloved by French families."},
+  {id:12,cat:'food',name:"Pastis",hood:"Meatpacking District",lat:40.7399,lng:-74.0078,desc:"Iconic French brasserie reborn in the Meatpacking District. Black-and-white tile, zinc bar, perfect."},
+  {id:13,cat:'food',name:"Lucali (French-owned)",hood:"Carroll Gardens",lat:40.6801,lng:-73.9967,desc:"The legendary pizza spot owned by a French-Italian family. Always a line, always worth it."},
+  {id:14,cat:'food',name:"Alma Restaurant",hood:"Carroll Gardens",lat:40.6795,lng:-73.9990,desc:"French chef-owned restaurant in the heart of Carroll Gardens' French community."},
+  {id:15,cat:'food',name:"Laduree SoHo",hood:"SoHo",lat:40.7232,lng:-73.9987,desc:"The iconic Parisian macaron boutique. Rose-scented, pastel-perfect piece of Paris in SoHo."},
+  {id:16,cat:'food',name:"Maman",hood:"Multiple",lat:40.7215,lng:-74.0045,desc:"French-Canadian bakery-café chain beloved by French expats. Croissants, quiche, and nostalgie."},
+  {id:17,cat:'food',name:"Le Crocodile",hood:"Wythe Hotel, Williamsburg",lat:40.7183,lng:-73.9587,desc:"Excellent French bistro inside Wythe Hotel — steak tartare, tête de veau, superb wine list."},
+  {id:18,cat:'food',name:"Marseille Restaurant",hood:"Hell's Kitchen",lat:40.7575,lng:-73.9895,desc:"Provençal French brasserie near Times Square. Bouillabaisse, branzino, croque monsieur."},
+  {id:19,cat:'food',name:"Raoul's",hood:"SoHo",lat:40.7247,lng:-74.0008,desc:"Classic SoHo French bistro since 1975. Dark, romantic, beloved by French expat artists and media."},
+  {id:20,cat:'food',name:"Brasserie 8½",hood:"Midtown",lat:40.7600,lng:-73.9810,desc:"Elegant French brasserie beneath an Eero Saarinen building. Steak frites, duck breast."},
+  // ── WINE & BARS ────────────────────────────────
+  {id:21,cat:'wine',name:"Maison Premiere",hood:"Williamsburg",lat:40.7166,lng:-73.9612,desc:"French-inspired oyster and absinthe bar. Absinthes, champagnes, raw bar — like a Parisian brasserie de nuit."},
+  {id:22,cat:'wine',name:"Le Barricou",hood:"Williamsburg",lat:40.7107,lng:-73.9635,desc:"French bar and restaurant. Williamsburg's primary French expat evening hub."},
+  {id:23,cat:'wine',name:"Bar Boulud",hood:"Upper West Side",lat:40.7718,lng:-73.9832,desc:"Daniel Boulud's wine bar — superb Burgundy and Rhône selections, charcuterie, pâtés."},
+  {id:24,cat:'wine',name:"Sel de Mer",hood:"Williamsburg",lat:40.7158,lng:-73.9590,desc:"French seafood and wine. French community gathering spot for after-work drinks."},
+  {id:25,cat:'wine',name:"Compagnie des Vins Surnaturels",hood:"SoHo",lat:40.7241,lng:-74.0010,desc:"NYC's best French natural wine bar. Imported directly from small French producers."},
+  {id:26,cat:'wine',name:"Corkbuzz Wine Studio",hood:"West Village",lat:40.7355,lng:-74.0038,desc:"Wine education and bar. French wines dominate the list; beloved by French sommeliers in NYC."},
+  {id:27,cat:'wine',name:"Verjus",hood:"SoHo",lat:40.7228,lng:-74.0028,desc:"French natural wine bar and restaurant from the Frenchette team. Beaujolais, Loire, Burgundy."},
+  {id:28,cat:'wine',name:"Frenchette",hood:"TriBeCa",lat:40.7182,lng:-74.0093,desc:"Modern French bistro turned natural wine destination. NYC's French food intelligentsia gathers here."},
+  {id:29,cat:'wine',name:"Wildair",hood:"Lower East Side",lat:40.7186,lng:-73.9951,desc:"Natural wine bar with a French sensibility. Beloved by young French food and wine professionals."},
+  {id:30,cat:'wine',name:"Chambers",hood:"Tribeca",lat:40.7168,lng:-74.0080,desc:"French wine-focused bar in Tribeca. Pre-theater crowd mixes with French expat regulars."},
+  // ── CULTURE ───────────────────────────────────
+  {id:31,cat:'culture',name:"Alliance Française NYC",hood:"Upper East Side",lat:40.7685,lng:-73.9647,desc:"French language courses, cultural events, film screenings, and a library. The cultural anchor for French expats."},
+  {id:32,cat:'culture',name:"FIAF — French Institute",hood:"Upper East Side",lat:40.7691,lng:-73.9644,desc:"French-American cultural organization founded 1911. Films, concerts, debates, language programs."},
+  {id:33,cat:'culture',name:"Albertine Books",hood:"Upper East Side",lat:40.7688,lng:-73.9640,desc:"French and English bookstore inside the French Embassy. 14,000 titles. A true cultural landmark."},
+  {id:34,cat:'culture',name:"Café Sabarsky",hood:"Upper East Side",lat:40.7830,lng:-73.9601,desc:"Viennese-French café in the Neue Galerie. Wiener Schnitzel, Sachertorte, and a deeply European atmosphere."},
+  {id:35,cat:'culture',name:"French Embassy NYC",hood:"Upper East Side",lat:40.7686,lng:-73.9641,desc:"The beating cultural heart of French NYC. Home to the consulate, Albertine, and cultural events."},
+  {id:36,cat:'culture',name:"Librairie de France",hood:"Midtown",lat:40.7590,lng:-73.9829,desc:"Legendary French bookshop at Rockefeller Center since 1935. Books, music, films in French."},
+  {id:37,cat:'culture',name:"MoMA — French Collection",hood:"Midtown",lat:40.7615,lng:-73.9777,desc:"MoMA's French Impressionist and Modern collection. French expats treat it like a second home."},
+  {id:38,cat:'culture',name:"Renaud Pâtisserie",hood:"Upper West Side",lat:40.7802,lng:-73.9836,desc:"Authentic French pastry school and boutique. Croissant classes, tarte Tatin workshops."},
+  {id:39,cat:'culture',name:"French Morning NYC (Events)",hood:"Various",lat:40.7292,lng:-73.9965,desc:"NYC's French-language media outlet hosts regular events, networking, and cultural meetups."},
+  {id:40,cat:'culture',name:"Bastille Day on 60th St",hood:"Upper East Side",lat:40.7602,lng:-73.9699,desc:"Annual July 14th block party on E 60th St. Pétanque, accordion, crêpes — NYC's biggest French celebration."},
+  {id:41,cat:'culture',name:"Maison Kayser",hood:"Multiple",lat:40.7248,lng:-73.9990,desc:"Authentic Parisian boulangerie chain from Eric Kayser. Croissants, pain au chocolat, baguettes."},
+  {id:42,cat:'culture',name:"French Cinema Club",hood:"Upper West Side",lat:40.7820,lng:-73.9839,desc:"Monthly French film screenings with Q&As and receptions. Active community cultural program."},
+  // ── COMMUNITY ─────────────────────────────────
+  {id:43,cat:'community',name:"French Consulate NYC",hood:"Midtown East",lat:40.7592,lng:-73.9651,desc:"Passports, civil registration, absentee voting, legalization of documents. Open Mon–Fri by appointment."},
+  {id:44,cat:'community',name:"Église St-Vincent de Paul",hood:"Chelsea",lat:40.7447,lng:-73.9982,desc:"French Catholic church in NYC since 1840. Sunday Mass in French. Community cornerstone for generations."},
+  {id:45,cat:'community',name:"Chambre de Commerce Fr.",hood:"Midtown",lat:40.7580,lng:-73.9885,desc:"French-American Chamber of Commerce. Business matchmaking, networking events, legal referrals."},
+  {id:46,cat:'community',name:"Carroll School Parent Group",hood:"Carroll Gardens",lat:40.6794,lng:-73.9952,desc:"The most active French parent community in Brooklyn. Monthly gatherings, new arrival welcome events."},
+  {id:47,cat:'community',name:"French Moms NYC",hood:"Upper East Side",lat:40.7726,lng:-73.9577,desc:"Active community of French mothers across NYC. Playgroups, school advice, relocation support."},
+  {id:48,cat:'community',name:"French Business Alliance NYC",hood:"Midtown",lat:40.7557,lng:-73.9870,desc:"Network for French executives, entrepreneurs, and investors in NYC. Quarterly events."},
+  {id:49,cat:'community',name:"BNP Paribas NYC Branch",hood:"Midtown",lat:40.7566,lng:-73.9810,desc:"French bank with specialist advisors who understand the French expat financial situation in the US."},
+  {id:50,cat:'community',name:"AXA Financial Center",hood:"Midtown",lat:40.7560,lng:-73.9795,desc:"French insurance and financial services. US-based advisors specializing in French expat insurance needs."},
+  {id:51,cat:'community',name:"French-American Bar Assoc.",hood:"Midtown",lat:40.7550,lng:-73.9750,desc:"Bilingual legal network connecting French lawyers in NYC. Referrals for French expats navigating US law."},
+  {id:52,cat:'community',name:"Air France NYC Office",hood:"Midtown",lat:40.7582,lng:-73.9832,desc:"Air France corporate office. Direct flights Paris CDG–JFK multiple times daily."},
+  {id:53,cat:'community',name:"Service Culturel Français",hood:"Midtown East",lat:40.7590,lng:-73.9660,desc:"Cultural section of the French Embassy. Manages grants, cultural exchanges, and academic programs."},
+  // ── SCHOOLS ───────────────────────────────────
+  {id:54,cat:'school',name:"Lycée Français de New York",hood:"Upper East Side",lat:40.7696,lng:-73.9581,desc:"The flagship French school. PreK through Baccalauréat. 1,200 students. Apply 12+ months early. €35K–50K/yr."},
+  {id:55,cat:'school',name:"Carroll School (PS 58)",hood:"Carroll Gardens",lat:40.6812,lng:-73.9945,desc:"FREE public French bilingual program — De Tilly's most requested neighborhood. Apply in December."},
+  {id:56,cat:'school',name:"Treehouse Kids Preschool",hood:"Upper East Side",lat:40.7748,lng:-73.9563,desc:"Full French immersion from age 2. NYC's most beloved French preschool. Waitlists fill extremely fast."},
+  {id:57,cat:'school',name:"Brooklyn French School",hood:"Park Slope",lat:40.6695,lng:-73.9860,desc:"Independent French school in Brooklyn. Growing fast. Ministry of Education recognized. €22K–30K/yr."},
+  {id:58,cat:'school',name:"PS 87 Bilingual Program",hood:"Upper West Side",lat:40.7843,lng:-73.9817,desc:"Free French-English public school program. K–5. In-zone families get priority admission."},
+  {id:59,cat:'school',name:"École Internationale NY",hood:"Midtown East",lat:40.7505,lng:-73.9667,desc:"IB school with strong French track. Popular with UN and diplomatic families. PreK–Grade 8."},
+  {id:60,cat:'school',name:"Léman Manhattan Prep",hood:"Financial District",lat:40.7076,lng:-74.0082,desc:"IB + bilingual education with French stream. Grades K–12. Popular with Tribeca French families."},
+  {id:61,cat:'school',name:"French-Am. School of NY",hood:"Larchmont (suburb)",lat:40.9201,lng:-73.7530,desc:"Beloved bilingual K-8 school, 45 min by Metro North from Grand Central. School bus from Manhattan."},
+  {id:62,cat:'school',name:"Columbia Univ. French Dept.",hood:"Morningside Heights",lat:40.8075,lng:-73.9626,desc:"One of the top French language & literature programs in the US. Major French academic community."}
+];
+
+const map = L.map('map',{center:[40.728,-73.988],zoom:12,zoomControl:true});
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{
+  attribution:'© OpenStreetMap contributors © CARTO',
+  subdomains:'abcd',maxZoom:20
+}).addTo(map);
+
+let activeFilter='all';
+let searchQuery='';
+let markerObjects=[];
+
+function buildMarkers(){
+  markerObjects.forEach(m=>map.removeLayer(m));
+  markerObjects=[];
+  const q=searchQuery.toLowerCase();
+  const visible=SPOTS.filter(s=>{
+    const catOk=activeFilter==='all'||s.cat===activeFilter;
+    const searchOk=!q||(s.name.toLowerCase().includes(q)||s.hood.toLowerCase().includes(q)||s.desc.toLowerCase().includes(q));
+    return catOk&&searchOk;
+  });
+  visible.forEach(s=>{
+    const m=L.marker([s.lat,s.lng],{icon:makeIcon(s.cat),riseOnHover:true}).addTo(map);
+    m.on('click',()=>{
+      markerObjects.forEach(mx=>mx.setIcon(makeIcon(mx._spot.cat)));
+      m.setIcon(makeIcon(s.cat,true));
+    });
+    m._spot=s;
+    m.bindPopup(`
+      <div>
+        <span style="font-size:9.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;padding:2px 9px;border-radius:20px;background:${CAT[s.cat].bg};color:${CAT[s.cat].text};display:inline-block;margin-bottom:5px">${CAT[s.cat].label}</span>
+        <div style="font-family:'Cormorant Garamond',serif;font-size:1.1rem;font-weight:300;color:#fff;margin-bottom:2px">${s.name}</div>
+        <div style="font-size:10.5px;color:rgba(255,255,255,.4);margin-bottom:6px">${s.hood}</div>
+        <div style="font-size:11.5px;color:rgba(255,255,255,.68);line-height:1.55">${s.desc}</div>
+      </div>`,{maxWidth:230,closeButton:true});
+    markerObjects.push(m);
+  });
+  renderList(visible);
+  document.getElementById('spotCount').textContent=visible.length+' spots';
+}
+
+function renderList(list){
+  const el=document.getElementById('spotList');
+  el.innerHTML='';
+  list.forEach((s,i)=>{
+    const d=document.createElement('div');
+    d.className='spot-item';
+    d.innerHTML=`<div class="spot-icon" style="background:${CAT[s.cat].bg}">${CAT[s.cat].icon}</div>
+    <div><div class="spot-name">${s.name}</div><div class="spot-hood">${s.hood}</div><div class="spot-desc">${s.desc.substring(0,80)}${s.desc.length>80?'…':''}</div></div>`;
+    d.onclick=()=>{
+      map.flyTo([s.lat,s.lng],15,{duration:.8});
+      const m=markerObjects[i];
+      if(m){
+        markerObjects.forEach(mx=>mx.setIcon(makeIcon(mx._spot.cat)));
+        m.setIcon(makeIcon(s.cat,true));
+        setTimeout(()=>m.openPopup(),500);
+      }
+    };
+    el.appendChild(d);
+  });
+}
+
+function filterCat(cat,btn){
+  activeFilter=cat;
+  document.querySelectorAll('.mf').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  buildMarkers();
+}
+
+function doSearch(){
+  searchQuery=document.getElementById('searchInput').value;
+  buildMarkers();
+}
+
+buildMarkers();
+</script>
+</body>
+</html>
